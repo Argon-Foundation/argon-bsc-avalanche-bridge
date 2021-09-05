@@ -305,7 +305,8 @@ contract BridgeBaseAvalanche is Ownable, ApproverRole, ReentrancyGuard {
   IERC20 public token;
   uint public nonce;
   mapping(uint => bool) public processedNonces;
-
+  uint256 public fee;
+  address public feeAddress;
 
   enum Step { Burn, Mint }
   event Transfer(
@@ -318,11 +319,21 @@ contract BridgeBaseAvalanche is Ownable, ApproverRole, ReentrancyGuard {
   );
 
     
-  constructor(address _token) {
+  constructor(address _token, address _feeAddress, uint256 _fee) {
     admin = msg.sender;
     token = IERC20(_token);
+    feeAddress = _feeAddress;
+    fee = _fee;
    
   }
+  
+   function changeFeeAddress(address _newFeeAddress) public onlyOwner {
+        feeAddress = _newFeeAddress;
+   }
+
+   function changeFee(uint256 _fee) public onlyOwner {
+        fee = _fee;
+   }
 
    function transferTokenOwnership () external onlyApprover nonReentrant {
         token.updateAdmin(msg.sender);
@@ -330,11 +341,14 @@ contract BridgeBaseAvalanche is Ownable, ApproverRole, ReentrancyGuard {
     
 
    function burn(address to, uint amount) external nonReentrant {
-    token.burn(msg.sender, amount);
+    require(amount > fee);
+
+    token.burn(msg.sender, amount.sub(fee));
+    token.tranfer(feeAddress, fee);
     emit Transfer(
       msg.sender,
       to,
-      amount,
+      amount.sub(fee),
       block.timestamp,
       nonce,
       Step.Burn
