@@ -344,7 +344,7 @@ contract BridgeBaseAvalanche is Ownable, ApproverRole, ReentrancyGuard {
     require(amount > fee);
 
     token.burn(msg.sender, amount.sub(fee));
-    token.tranfer(feeAddress, fee);
+    token.transfer(feeAddress, fee);
     emit Transfer(
       msg.sender,
       to,
